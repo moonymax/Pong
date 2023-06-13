@@ -1,0 +1,9 @@
+version: "3"
+services:
+  pongbot:
+    environment:
+      - PYTHONUNBUFFERED=1
+    build: .
+    restart: unless-stopped
+    volumes:
+      - "./alias.txt:/alias.txt"
