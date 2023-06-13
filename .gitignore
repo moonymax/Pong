@@ -4,3 +4,5 @@ alias.txt
 pong.zip
 temptts.mp3
 upload
+__pycache__/
+.gitignore
