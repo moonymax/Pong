@@ -8,14 +8,14 @@ encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
  
 
-play_desc = {"name": "play_youtube_audio",
-    "description": "Play any youtube video's audio",
+play_desc = {"name": "play_audio",
+    "description": "Play a song or youtube video by name",
     "parameters": {
         "type": "object",
         "properties": {
             "title": {
                 "type": "string",
-                "description": "The title of the video e.g. Pirates of the Caribbean Theme"
+                "description": "The title of the youtube video or song"
             },
         },
         "required": ["title"]
