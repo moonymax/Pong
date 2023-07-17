@@ -1,6 +1,6 @@
 # Discord Bot with ChatGPT Integration
 
-This Discord bot incorporates ChatGPT for chatting and the execution of commands through natural language instructions. It also has standard Discord slash commands. Although the previous experience was somewhat akin to negotiating with a sentient bomb to deactivate itself. With open AI's release of gpt-3.5-turbo-0613 the adherance to the system prompt seems to have resolved the issue of it orienting its behavior on past responses rather than the system prompt. The bot is still deeply biased toward Ed Sheeran when asked to play any song.
+This Discord bot incorporates ChatGPT for chatting and the execution of commands through natural language instructions. It also has standard Discord slash commands. Although the previous experience was somewhat akin to negotiating with a sentient bomb to deactivate itself. With open AI's release of gpt-3.5-turbo-0613 the function calling feature has resolved the reliability issues. The bot might nonetheless still be deeply biased toward Ed Sheeran when asked to play any song.
 
 ## Installation
 
@@ -20,40 +20,17 @@ Then pong will respond to every message in any channel until it is told to go ba
 
 Here are the commands that the bot can execute with natural language instructions:
 
-- /sleep: Executes the sleep command, which allows the bot to go back to sleep.
+- sleep: Executes the sleep command, which allows the bot to go back to sleep.
 
-- /play "<name of song/video>": Executes the play command, which allows the bot to play the audio of a specific YouTube video based on its title in the voice chat.
+- play "<name of song/video>": Executes the play command, which allows the bot to play the audio of a specific YouTube video based on its title in the voice chat.
 
-- /stop: Executes the stop command, which stops any audio that is currently playing.
+- stop: Executes the stop command, which stops any audio that is currently playing.
 
-Note: These commands are added to the bot by simply including them in the system prompt with a short natural language description for when they should be run and what they do. They then still have to be executed by parsing them out of the response text. While this approach is a lot simpler than OpenAI's newly released ChatGPT function calling ability, it is still less reliable and not as clean looking since every reponse includes the "Execute: /<command>" to minimize the potential for confusion in future responses.
-
-The bot should respond in the following format:
-
-```
-<text response>
-Execute: /<command> <arg1> <arg2>
-```
-
-Here is an example of a simple interaction:
-
-User:
-  
-  ```
-  Play a song please!
-  ```
-
-PongGPT:
-  
-  ```
-  I'd be happy to play a song for you. I'll play Shape of you by Ed Sheeran.
-  Execute: /play "Shape of you by Ed Sheeran"
-  ```
+Note: Since the utilization of the function calling feature there have been no more reliability issues in regards to the AI
   
 ## Limitations
-The successful execution of commands depends on correct response formatting for command extraction. However, the bot's reliability is affected by occasional refusal to run commands due to being an "AI Language model" or incorrect command formatting. While there is some patch code in place to handle malformed responses to prevent some command formatting failures, relying on these solutions is not an effective or definitive approach. See [Improvements](#improvements) for potential [improvements](#improvements).
+The bot is now mainly limited by the reliability of the Discord API and openai API. If either of these are overloaded the bot might respond with the occasional prolonged silence. See [Improvements](#improvements) for potential [improvements](#improvements).
 
-Previously, failures to format the command correctly made subsequent commands even more unreliable. The examples of its previous incorrect formatting were the only thing it oriented its new responses on. The bot now seems to have the ability to correct its behavior and recover from incorrect formatting, which is largely attributable to gpt-3.5-turbo-0613's increased ability to obey the system prompt.
 
 ## Improvements
-Replacing my text parsing with the official function/API calling feature which is now available with gpt-3.5-turbo-0613 would eliminate the need for text parsing and would streamline the addition of new commands.
+The bot is currently awaken and put back to sleep globaly. This has led to a number of interesting occasions where pong seemed to activate himself, so a substantial improvement would be to handle this on server by server basis.
