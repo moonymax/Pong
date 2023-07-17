@@ -172,7 +172,7 @@ async def on_message(message):
         if function is not None:
             function_call, function_arguments = function
             function_response = {}
-            if function_call['name'] == "play_youtube_audio":
+            if function_call['name'] == "play_audio":
                 await playvideo(message, function_arguments['title'])
                 function_response = {
                     "success": True,
@@ -185,7 +185,6 @@ async def on_message(message):
                 function_response = {
                     "success": True
                 }
-                response = await afterFunctionCall(message, "play_youtube_audio", function_arguments, function_response, openai, client)
             elif function_call['name'] == "sleep":
                 isPongAwake = False
                 await client.change_presence(status=discord.Status.idle)
