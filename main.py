@@ -24,19 +24,21 @@ import asyncio
 from dotenv import dotenv_values
 import typing
 from mem import loadjson, savejson
-from gpt import pongGPT
+from gpt import pongGPT, afterFunctionCall
 config = dotenv_values(".env")
 import openai
 openai.api_key = config["API_KEY"] 
 
-GUILD_ID = config["GUILD_ID"]
+GUILD_IDs = config["GUILD_ID"]
 TOKEN = config["TOKEN"]
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
-guild =discord.Object(id=GUILD_ID) 
+guilds =[]
+for guildid in GUILD_IDs.split(","):
+    guilds.append(discord.Object(id=guildid))
 
 
 #GLOBALS
@@ -45,7 +47,7 @@ alias = {}
 #@commands.has_permissions(administrator=True)
 group = app_commands.Group(name="alias", description="define shortcuts for playing a youtube link in the voice chat")
 
-tree.add_command(group, guild=guild)
+tree.add_command(group, guilds=guilds)
 @group.command(description="List all bindings")
 async def list(interaction):
     bigstring = ""
@@ -70,19 +72,19 @@ async def remove(inter, name: str):
 
 from yt import playvideo, playurl
 
-@tree.command(name="play", description="Play a youtube video in voice chat", guild=guild)
+@tree.command(name="play", description="Play a youtube video in voice chat", guilds=guilds)
 async def play(inter, videoname: str):
     if isinstance(inter.channel, discord.DMChannel):return
     await inter.response.send_message("playing: " + videoname, ephemeral=True, delete_after=20.0)
     await playvideo(inter, videoname)
 
-@tree.command(name="sleep", description="Put PongGPT to sleep at any time with this command", guild=guild)
+@tree.command(name="sleep", description="Put PongGPT to sleep at any time with this command", guilds=guilds)
 async def sleep(inter):
     isPongAwake = False
     await client.change_presence(status=discord.Status.idle)
     await inter.response.send_message("PongGPT is going to sleep", ephemeral=True, delete_after=20.0)
 
-@tree.command(name="stop", description="Stop any audio pong is currently playing in vc and disconnect", guild=guild)
+@tree.command(name="stop", description="Stop any audio pong is currently playing in vc and disconnect", guilds=guilds)
 async def stop(inter):
     await inter.response.send_message("stopping audio", ephemeral=True, delete_after=20.0)
     for vc in client.voice_clients:
@@ -91,7 +93,8 @@ async def stop(inter):
 
 @client.event
 async def on_ready():
-    await tree.sync(guild=discord.Object(id=GUILD_ID))
+    for guild in guilds:
+        await tree.sync(guild=guild)
     await client.change_presence(status=discord.Status.idle)
     global alias
     alias = loadjson('alias.txt')
@@ -165,43 +168,29 @@ async def on_message(message):
         respondingATM = True
         await reset_timeout()
         await client.change_presence(status=discord.Status.online)
-        response = await pongGPT(message, openai, client)
-        lines = response.split("\n")
-        cleanresponse = ""
-        print(response)
-        def startswithany(originalstring, strings):#
-            for substr in strings:
-                if originalstring.startswith(substr):
-                    return True
-        def stringafter(originalstring, afterthis):
-            index = originalstring.find(afterthis)
-            return originalstring[index + len(afterthis):]
-
-        for i in range(len(lines)):
-            if "Execute: /" in lines[i] or startswithany(lines[i], ["/sleep", "/play", "/stop"]):
-                #handle the line
-                if "Execute: /" in lines[i]:
-                    fullcommand = stringafter(lines[i], "Execute: /")
-                else:
-                    fullcommand = lines[i][len("/"):]
-                print(fullcommand)
-                #match the command with an existing command
-                command = fullcommand.split(" ")[0]
-                if command == "sleep":
-                    #sleep
-                    isPongAwake = False
-                    await client.change_presence(status=discord.Status.idle)
-                elif command == "play":
-                    #play a video
-                    videotitle = findbetweenquotes(fullcommand)
-                    await playvideo(message, videotitle)
-                elif command == "stop":
-                    #stop all audio
-                    for vc in client.voice_clients:
+        response, function = await pongGPT(message, openai, client)
+        if function is not None:
+            function_call, function_arguments = function
+            function_response = {}
+            if function_call['name'] == "play_youtube_audio":
+                await playvideo(message, function_arguments['title'])
+                function_response = {
+                    "success": True,
+                    "playing": function_arguments['title']
+                }
+            elif function_call['name'] == "stop_audio":
+                for vc in client.voice_clients:
                         if vc.guild == message.channel.guild:
                             await vc.disconnect()
-            else:
-                cleanresponse += lines[i] + "\n"
+                function_response = {
+                    "success": True
+                }
+                response = await afterFunctionCall(message, "play_youtube_audio", function_arguments, function_response, openai, client)
+            elif function_call['name'] == "sleep":
+                isPongAwake = False
+                await client.change_presence(status=discord.Status.idle)
+                function_response = {"success": True}
+            response = await afterFunctionCall(message, function_call['name'], function_arguments, function_response, openai, client)
         await message.channel.send(response.replace(" - PongGPT", ""))
         respondingATM = False
 
