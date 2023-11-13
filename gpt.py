@@ -79,7 +79,7 @@ async def pongGPT(message, openai, client):
     #flagged, categories, cleaned = await violatesTerms(msgs) 
     messages.insert(0, system_message)
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-0613",
+        model="gpt-3.5-turbo-1106",
         messages=messages,
         max_tokens=200,
         functions=function_descriptions
