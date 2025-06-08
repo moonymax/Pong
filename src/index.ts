@@ -29,7 +29,7 @@ if (!AISTUDIO_API_KEY) {
 const cookies = JSON.parse(
   fs.readFileSync("cookies.json", { encoding: "utf-8" })
 );
-const agent = ytdl.createAgent(cookies);
+//const agent = ytdl.createAgent(cookies);
 
 const pongActiveInGuild: Record<string, boolean> = {};
 const pongTimeoutIdInGuild: Record<string, NodeJS.Timeout | null> = {};
@@ -109,7 +109,7 @@ async function playAudio(message: Message, { name }: { name: string }) {
     const stream = await ytdl(url, {
       quality: "highestaudio",
       filter: "audioonly",
-      agent,
+      //agent,
     });
     audioPlayer.play(createAudioResource(stream));
   }
