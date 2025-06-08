@@ -12,31 +12,31 @@ importers:
         specifier: github:discordjs/opus
         version: https://codeload.github.com/discordjs/opus/tar.gz/679ff3f58e6804b80becc166c7214deb2ca026e2
       '@discordjs/voice':
-        specifier: ^0.18.0
+        specifier: 0.18.0
         version: 0.18.0(@discordjs/opus@https://codeload.github.com/discordjs/opus/tar.gz/679ff3f58e6804b80becc166c7214deb2ca026e2)
       '@distube/ytdl-core':
-        specifier: ^4.16.11
-        version: 4.16.11
+        specifier: 4.16.10
+        version: 4.16.10
       '@types/yt-search':
-        specifier: ^2.10.3
+        specifier: 2.10.3
         version: 2.10.3
       discord.js:
-        specifier: ^14.19.3
+        specifier: 14.19.3
         version: 14.19.3
       dotenv-cli:
-        specifier: ^8.0.0
+        specifier: 8.0.0
         version: 8.0.0
       libsodium-wrappers:
-        specifier: ^0.7.15
+        specifier: 0.7.15
         version: 0.7.15
       openai:
-        specifier: ^5.1.1
+        specifier: 5.1.1
         version: 5.1.1(ws@8.18.2)(zod@3.25.56)
       yt-search:
-        specifier: ^2.13.1
+        specifier: 2.13.1
         version: 2.13.1
       zod:
-        specifier: ^3.25.56
+        specifier: 3.25.56
         version: 3.25.56
 
 packages:
@@ -83,9 +83,10 @@ packages:
     resolution: {integrity: sha512-dyfq7yn0wO0IYeYOs3z79I6/HumhmKISzFL0Z+007zQJMtAFGtt3AEoq1nuLXtcunUE5YYYQqgKvybXukAK8/w==}
     engines: {node: '>=16.11.0'}
 
-  '@distube/ytdl-core@4.16.11':
-    resolution: {integrity: sha512-yMQiicS5CuuTBsROb1iCRM09VZVL98EJ40LEtC7dMrgOWaHuJIwaL1w/ddC9DTNOUEV90T/1xYYLqM6Oc7q9kQ==}
+  '@distube/ytdl-core@4.16.10':
+    resolution: {integrity: sha512-KFKZtNlynOO0PYxelUF5h2bKyAU1d8fe6aZmo+gxWt7H2MQbd0bUeyV4y9iWhI57nukjkSXXQGB625CfhrVdGQ==}
     engines: {node: '>=20.18.1'}
+    deprecated: This version is deprecated, please upgrade to the latest version.
 
   '@jsep-plugin/assignment@1.3.0':
     resolution: {integrity: sha512-VVgV+CXrhbMI3aSusQyclHkenWSAm95WaiKrMxRFam3JSUiIaQjoMIw2sEs/OX4XifnqeQUN4DYbJjlA8EfktQ==}
@@ -769,7 +770,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@distube/ytdl-core@4.16.11':
+  '@distube/ytdl-core@4.16.10':
     dependencies:
       http-cookie-agent: 7.0.1(tough-cookie@5.1.2)(undici@7.10.0)
       https-proxy-agent: 7.0.6
