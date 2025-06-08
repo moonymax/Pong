@@ -7,6 +7,7 @@ import {
 } from "@discordjs/voice";
 import ytdl from "@distube/ytdl-core";
 import yts from "yt-search";
+import fs from "fs";
 import type { Message, OmitPartialGroupDMChannel } from "discord.js";
 import OpenAI from "openai";
 import type {
@@ -24,6 +25,11 @@ if (!DISCORD_TOKEN) {
 if (!AISTUDIO_API_KEY) {
   throw new Error("Missing AISTUDIO_API_KEY in environment variables.");
 }
+
+const cookies = JSON.parse(
+  fs.readFileSync("cookies.json", { encoding: "utf-8" })
+);
+const agent = ytdl.createAgent(cookies);
 
 const pongActiveInGuild: Record<string, boolean> = {};
 const pongTimeoutIdInGuild: Record<string, NodeJS.Timeout | null> = {};
@@ -103,6 +109,7 @@ async function playAudio(message: Message, { name }: { name: string }) {
     const stream = await ytdl(url, {
       quality: "highestaudio",
       filter: "audioonly",
+      agent,
     });
     audioPlayer.play(createAudioResource(stream));
   }
