@@ -1,0 +1,21 @@
+{
+  "name": "pong",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "dotenv -e .env -- node --experimental-strip-types src/index.ts",
+    "start": "dotenv -e .env -- node --experimental-strip-types src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.9.0",
+  "dependencies": {
+    "discord.js": "^14.19.3",
+    "dotenv-cli": "^8.0.0",
+    "openai": "^5.1.1",
+    "zod": "^3.25.56"
+  }
+}
