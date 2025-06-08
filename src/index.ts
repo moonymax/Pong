@@ -1,19 +1,21 @@
-import { Client, Embed, EmbedBuilder, GatewayIntentBits } from "discord.js";
+import { Client, EmbedBuilder, GatewayIntentBits } from "discord.js";
+import {
+  joinVoiceChannel,
+  createAudioPlayer,
+  createAudioResource,
+  VoiceConnection,
+} from "@discordjs/voice";
+import ytdl from "@distube/ytdl-core";
+import yts from "yt-search";
 import type { Message, OmitPartialGroupDMChannel } from "discord.js";
 import OpenAI from "openai";
 import type {
   ChatCompletionAssistantMessageParam,
-  ChatCompletionNamedToolChoice,
   ChatCompletionUserMessageParam,
 } from "openai/resources/index";
 import { z } from "zod";
 
 const { DISCORD_TOKEN, AISTUDIO_API_KEY } = process.env;
-
-let pongActive = false;
-
-let pongTimeoutId: NodeJS.Timeout | null = null;
-const pongTimeout = 60000;
 
 // Early return/gate clause for missing token
 if (!DISCORD_TOKEN) {
@@ -23,6 +25,24 @@ if (!AISTUDIO_API_KEY) {
   throw new Error("Missing AISTUDIO_API_KEY in environment variables.");
 }
 
+const pongActiveInGuild: Record<string, boolean> = {};
+const pongTimeoutIdInGuild: Record<string, NodeJS.Timeout | null> = {};
+
+const voiceConnectionsByGuild: Record<string, VoiceConnection[]> = {};
+
+const pongTimeout = 60000;
+
+const rickroll = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildVoiceStates,
+  ],
+});
+
 const openai = new OpenAI({
   apiKey: AISTUDIO_API_KEY,
   baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
@@ -30,26 +50,102 @@ const openai = new OpenAI({
 
 const toolSchema = z.object({ name: z.string(), parameters: z.any() });
 
-async function playAudio(name: string) {
-  //play some audio
-  console.debug("CALLED PLAY AUDIO", name);
+async function getVoiceChannelByMessage(message: Message) {
+  const authorId = message.author.id;
+  const maybeChannels = await message.guild?.channels.fetch();
+  const voiceChannels = maybeChannels?.filter((channel) =>
+    channel?.isVoiceBased()
+  );
+  if (!voiceChannels) return;
+  const voiceChannelWithUser = voiceChannels.find((channel) =>
+    channel?.members.some((member) => member.id === authorId)
+  );
+  if (!voiceChannelWithUser) return;
+
+  return voiceChannelWithUser;
 }
 
-async function stopAudio() {
-  //stop audio
-  console.debug("CALLED STOP AUDIO");
+async function joinVoiceChannelTool(message: Message) {
+  //join voice channel
 }
 
-async function sleep() {
-  console.debug("CALLED SLEEP");
+async function leaveVoiceChannel(message: Message) {
+  //leaving voice channel
+}
+
+async function playAudio(message: Message, { name }: { name: string }) {
+  const guildId = message.guildId;
+  if (!guildId) return;
+
+  const voiceChannelWithUser = await getVoiceChannelByMessage(message);
+  if (!voiceChannelWithUser) return;
+
+  const connection = joinVoiceChannel({
+    channelId: voiceChannelWithUser.id,
+    guildId: voiceChannelWithUser.guild.id,
+    adapterCreator: voiceChannelWithUser.guild.voiceAdapterCreator,
+  });
+
+  if (voiceConnectionsByGuild[guildId]) {
+    voiceConnectionsByGuild[guildId].push(connection);
+  } else {
+    voiceConnectionsByGuild[guildId] = [connection];
+  }
+
+  const result = await yts(name);
+  const url = result.videos[0].url;
+
+  const audioPlayer = createAudioPlayer();
+
+  const subscription = connection.subscribe(audioPlayer);
+
+  if (subscription) {
+    const stream = await ytdl(url, {
+      quality: "highestaudio",
+      filter: "audioonly",
+    });
+    audioPlayer.play(createAudioResource(stream));
+  }
+  audioPlayer.addListener("stateChange", (oldState, newState) => {
+    console.debug("state changed to", newState.status);
+    if (newState.status === "idle") {
+      subscription?.unsubscribe();
+      connection.destroy();
+      audioPlayer.stop(true);
+    }
+  });
+  console.debug("This is running right after starting to play");
+}
+
+async function stopAudio(message: Message) {
+  const guildId = message.guildId;
+  if (!guildId) return;
+  const connections = voiceConnectionsByGuild[guildId];
+  if (!connections) return;
+  connections.forEach((connection) => {
+    connection.disconnect();
+    connection.destroy();
+  });
+}
+
+async function sleep(message: Message) {
+  const guildId = message.guildId;
+  if (!guildId) return;
+
+  const pongTimeoutId = pongTimeoutIdInGuild[guildId];
   if (pongTimeoutId !== null) clearTimeout(pongTimeoutId);
   client.user?.setPresence({
     status: "idle",
   });
-  pongActive = false;
+  pongActiveInGuild[guildId] = false;
 }
 
-const tools: Record<string, (parameters: any) => Promise<void>> = {
+const tools: Record<
+  string,
+  (message: Message, parameters: any) => Promise<void>
+> = {
+  // join_voice_channel: joinVoiceChannelTool,
+  // leave_voice_channel: leaveVoiceChannel,
   play_audio: playAudio,
   stop_audio: stopAudio,
   sleep,
@@ -73,42 +169,59 @@ you MUST put it in the format of
 {"name": function name, "parameters": dictionary of argument name and its value}
 
 You SHOULD NOT include any other text in the response if you call a function
-[
+${JSON.stringify([
+  // {
+  //   name: "join_voice_channel",
+  //   description:
+  //     "Allows you to join the voice channel of the user. Only call this function if I explicitly ask you to.",
+  //   parameters: {
+  //     type: "object",
+  //     properties: {},
+  //   },
+  // },
+  // {
+  //   name: "leave_voice_channel",
+  //   description:
+  //     "Allows you to leave the voice channel of the user. Only call this function if I explicitly ask you to.",
+  //   parameters: {
+  //     type: "object",
+  //     properties: {},
+  //   },
+  // },
   {
-    "name": "play_audio",
-    "description": "Plays a song or youtube video by name. Only call this function if I explicitly ask you to.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "The title of the youtube video or song"
-        }
+    name: "play_audio",
+    description:
+      "Plays a song or youtube video by name. Only call this function if I explicitly ask you to.",
+    parameters: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "The title of the youtube video or song",
+        },
       },
-      "required": [
-        "name"
-      ]
-    }
+      required: ["name"],
+    },
   },
   {
-    "name": "stop_audio",
-    "description": "Stops any audio that is currently playing. Only call this function if I explicitly ask you to.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-      },
-    }
+    name: "stop_audio",
+    description:
+      "Stops any audio that is currently playing. Only call this function if I explicitly ask you to.",
+    parameters: {
+      type: "object",
+      properties: {},
+    },
   },
   {
-    "name": "sleep",
-    "description": "Makes you go to sleep. Do this if I ask you to leave in some way. eg 'go away', 'sleep', 'bye', 'goodbye'.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-      },
-    }
-  }
-]`,
+    name: "sleep",
+    description:
+      "Makes you go to sleep. Do this if I ask you to leave in some way. eg 'go away', 'sleep', 'bye', 'goodbye'.",
+    parameters: {
+      type: "object",
+      properties: {},
+    },
+  },
+])}`,
       },
       ...messages,
     ],
@@ -140,14 +253,6 @@ async function fetchHistory({
   return messages.reverse();
 }
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent, // Required for accessing message content
-  ],
-});
-
 client.once("ready", async () => {
   console.log(`Bot is ready! Logged in as ${client.user?.tag}`);
   client.user?.setPresence({
@@ -156,7 +261,6 @@ client.once("ready", async () => {
 });
 
 client.on("messageCreate", async (message) => {
-  console.info("received message:", message.content);
   // Avoid processing bot messages to prevent infinite loops
   if (message.author.bot) {
     return;
@@ -164,31 +268,36 @@ client.on("messageCreate", async (message) => {
 
   const messageContent = message.content.toLowerCase();
 
+  const guildId = message.guildId;
+
+  // This prevents messaging pong in DMs
+  if (!guildId) return;
+
   if (
     messageContent.includes(" pong") ||
     messageContent.includes("pong ") ||
     messageContent === "pong"
   ) {
-    pongActive = true;
+    pongActiveInGuild[guildId] = true;
     client.user?.setPresence({
       status: "online",
     });
   }
-  if (!pongActive) {
+  if (!pongActiveInGuild[guildId]) {
     console.info("pong is inactive");
     return;
   }
 
-  if (pongTimeoutId !== null) clearTimeout(pongTimeoutId);
-  pongTimeoutId = setTimeout(() => {
-    pongActive = false;
+  if (pongTimeoutIdInGuild[guildId] !== null)
+    clearTimeout(pongTimeoutIdInGuild[guildId]);
+  pongTimeoutIdInGuild[guildId] = setTimeout(() => {
+    pongActiveInGuild[guildId] = false;
     client.user?.setPresence({
       status: "idle",
     });
   }, pongTimeout);
 
   const history = await fetchHistory({ message });
-  console.debug({ history });
 
   await message.channel.sendTyping();
   const response = await ai([...history]);
@@ -222,7 +331,7 @@ client.on("messageCreate", async (message) => {
         return;
       }
       const tool = tools[name];
-      tool(parameters);
+      tool(message, parameters);
       functionCallEmbeds.push(
         new EmbedBuilder().addFields({
           name: "function call",
