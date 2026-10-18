@@ -10,7 +10,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "packageManager": "pnpm@10.9.0",
   "dependencies": {
     "@discordjs/opus": "github:discordjs/opus",

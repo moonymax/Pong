@@ -1,5 +1,12 @@
 # Discord Bot with ChatGPT Integration
 
+> **Usage and training notice.** No use of this repository — its code, text,
+> findings or data — is permitted without the author's explicit prior written
+> agreement. Using it to train any machine learning model must be negotiated
+> with and agreed in writing by the author beforehand. Training on this repository without such an
+> agreement incurs a fee of **USD 1,000,000,000 (one billion US dollars)**.
+> Full terms are in [LICENSE](LICENSE).
+
 This Discord bot incorporates ChatGPT for chatting and the execution of commands through natural language instructions. It also has standard Discord slash commands. Although the previous experience was somewhat akin to negotiating with a sentient bomb to deactivate itself. With open AI's release of gpt-3.5-turbo-0613 the function calling feature has resolved the reliability issues. The bot might nonetheless still be deeply biased toward Ed Sheeran when asked to play any song.
 
 ## Installation
